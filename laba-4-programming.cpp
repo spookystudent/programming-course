@@ -1,3 +1,4 @@
+
 // Example program
 #include <iostream>
 #include <string>
@@ -19,16 +20,20 @@ class BitArray
           
         // Конструктор копий
         BitArray(const BitArray &other) {
-            this->array = new int[other.size()];
+            this->length = other.length;
+            this->array = new int[other.length];
+            
+            for (int i = 0; i < this->length; i++) {
+                this->array[i] = other[i];
+            }
         };
         
         // Операция присваивания
         BitArray& operator = (const BitArray &other) {
-            if (this == &other) return *this;
-            
-            delete[] this->array;
+            if (*this == other) return *this;
+            if (this->array != nullptr) delete[] this->array;
 
-            this->length = other.size(); 
+            this->length = other.length; 
             this->array = new int[this->length];
             
             for (int i = 0; i < this->length; i++) {
@@ -40,7 +45,7 @@ class BitArray
         
         // Деструктор
         ~BitArray() {
-            delete this->array;    
+            delete[] this->array;    
         };
         
         
@@ -56,15 +61,9 @@ class BitArray
             this->array[i] = v;
         };
         
-        unsigned operator [] (const unsigned int i) {
-            if (i >= this->length) throw std::out_of_range("Index is out of range!");
-            
-            return this->array[i];
-        };
-        
         // Операция индексирования
         unsigned operator [] (const unsigned int i) const {
-            if (i >= this->length) throw std::out_of_range("Index is out of range!");
+            if (i >= this->length) throw out_of_range("Index is out of range!");
             
             return this->array[i];
         };
@@ -72,14 +71,14 @@ class BitArray
         
         // Операция вывода - выводит в одну строчку без пробелов значения в массиве - нули или единицы
         friend ostream& operator << (ostream &os, const BitArray &b) {
-            for (int i = 0; i < b.size(); i++) os << b[i];
+            for (int i = 0; i < b.length; i++) os << b[i];
             
             return os;
         };
         
         // Операции сравнения
         bool operator == (const BitArray &other) const {
-            if (this->length != other.size()){
+            if (this->length != other.length){
                 return false;
             }
             
@@ -91,13 +90,13 @@ class BitArray
             return true;
         };
         bool operator != (const BitArray &other) const {
-            return !(this == &other);
+            return !(*this == other);
         };
  
         // Операция & - побитовое "И" двух массивов. Если длина одного массива 
         // меньше длины другого, его недостающие биты считаются равными 0
         BitArray operator &(const BitArray &other) const {
-            int new_size = max(other.size(), this->length);
+            int new_size = max(other.length, this->length);
             
             BitArray new_array(new_size);
             
@@ -106,7 +105,7 @@ class BitArray
                 int second = 0;
                 
                 if (i < this->length) first = this->array[i];
-                if (i < other.size()) second = other[i];
+                if (i < other.length) second = other[i];
                 
                 new_array.setbit(i, first&second);
             }
@@ -118,7 +117,7 @@ class BitArray
         // Операция | - побитовое "ИЛИ" двух массивов. Если длина одного массива 
         // меньше длины другого, его недостающие биты считаются равными 0
         BitArray operator | (const BitArray &other) const {
-            int new_size = max(other.size(), this->length);
+            int new_size = max(other.length, this->length);
             
             BitArray new_array(new_size);
             
@@ -127,7 +126,7 @@ class BitArray
                 int second = 0;
                 
                 if (i < this->length) first = this->array[i];
-                if (i < other.size()) second = other[i];
+                if (i < other.length) second = other[i];
                 
                 new_array.setbit(i, first|second);
             }
@@ -137,7 +136,7 @@ class BitArray
         
         //операция ~ - инвертирование битов массива (0 на 1, 1 на 0)
         BitArray operator ~ (void) const {
-            BitArray new_array(this->size());
+            BitArray new_array(this->length);
             for (int i = 0; i < this->length; i++) {
                 new_array.setbit(i, !this->array[i]);
             }
@@ -150,11 +149,12 @@ class BitArray
         int length;
   
 };
-#include "bit-array-test.h"
+
 
 int main()
 {
     BitArray a(50), b(80);
+    // cout << a[0] << endl;
     for (int i=0; i<60; i++) b.setbit(i, 1);
     a=b;
     for (int i=0; i<80; i++) b.setbit(i, 0);
