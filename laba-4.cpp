@@ -62,7 +62,7 @@ class BitArray
         };
         
         // Операция индексирования
-        unsigned operator [] (const unsigned int i) const {
+        int& operator [] (const unsigned int i) const {
             if (i >= this->length) throw out_of_range("Index is out of range!");
             
             return this->array[i];
