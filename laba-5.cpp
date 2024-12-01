@@ -3,24 +3,6 @@
 
 using namespace std;
 
-/*
-drafts...
-	Set tree;
-
-	tree.append(13);
-	tree.append(14);
-
-	struct ElementSet
-		ElementSet* up;
-		ElementSet* left;
-		ElementSet* right;
-
-	Set tree
-		ElementSet* top;
-
-		append():
-...
-*/
 
 template <class T>
 class Set {
@@ -47,19 +29,24 @@ class Set {
 
 	struct ElementSet {
         T value;
+		int hash; // <- по идеи не нужно
         ElementSet *up = nullptr;
         ElementSet *left = nullptr;
         ElementSet *right = nullptr;
 
-        ElementSet(const T &val) : value(val) {}
+        ElementSet(const T &val) : value(val), hash(std::hash<T>()(val)) {}
     };
 
     ElementSet *root = nullptr;
+	ElementSet *elementMin = nullptr;
+	ElementSet *elementMax = nullptr;
+	ElementSet *elementMiddle = nullptr;
+
+	int diff_points = -1;
 
 
 	// add element to tree as ElementSet
     void add(ElementSet *&element, const T &value, ElementSet *parent = nullptr) {
-
         if (!element) {
             element = new ElementSet(value);
             element->up = parent;
@@ -69,14 +56,20 @@ class Set {
 		// Рекурсивное движение по дереву влево-вправо в зависимости сравнения,
 		// по итогу натыкаемся на element, у которого нет left или right
         } else if (value < element->value) {
-			
             this->add(element->left, value, element);
-
+			
         } else if (value > element->value) {
-
             this->add(element->right, value, element);
-
         }
+
+
+		// Заранее определяем мин макс при заполнении дерева
+		if (!elementMin || element->value < elementMin->value ) {
+			this->elementMin = element; 
+		}
+		if (!elementMax || element->value > elementMax->value ) {
+			this->elementMax = element; 
+		}
     }
 	void clear(ElementSet *element) {
         if (element) {
@@ -86,22 +79,75 @@ class Set {
         }
     }
 
+	int get_hash(const T &value) const {
+		return std::hash<T>()(value);
+	}
+
+	void printElements(ostream& os, ElementSet* element) const {
+		if (element) {
+			printElements(os, element->left);
+			os << element->value << " ";
+			printElements(os, element->right);
+		}
+	}
+
+
+	
+
+	void getMiddleRecursive(ElementSet* element) {
+		if (!element) {
+			return;
+		}
+
+		getMiddleRecursive(element->right);
+		
+		if (this->elementMin && this->elementMax) {
+			int average = (elementMax->value + elementMin->value) / 2;
+
+			if (!elementMiddle) {
+				this->elementMiddle = element;
+				this->diff_points = abs(average - element->value);
+
+			} else {
+				int currentDiff = abs(average - elementMiddle->value);
+				int newDiff = abs(average - element->value);
+
+				if (newDiff < currentDiff) {
+					this->elementMiddle = element;
+					this->diff_points = newDiff;
+				}
+			}
+		}
+
+		getMiddleRecursive(element->left);
+	}
+
+
+
 	public:
 		Set() {
-			cout << "Constructor\n";
+
 		};
-		Set(const Set &other) {
+		Set(const Set &other_set) {
 			cout << "Constructor other\n";
 		};
 		~Set() {
-			cout << "Clear\n";
 			clear(this->root);
 		}
 
+		// Вставка элемента в множество
+        Set operator + (const T &value) {
+            this->add(this->root, value);
 
+			return *this;
+        };
+        friend Set operator + (const T &value, const Set &set) {
+			set.add(set.root, value);
+
+			return *set;
+        };
 		Set &operator += (const T &value)
 		{
-			//    add(ElementSet, T    )
 			this->add(this->root, value);
 
 			return *this;
@@ -115,44 +161,64 @@ class Set {
 			return *this;
 		};
 
-		void printTreeRecursive(ElementSet* element, int depth = 0) const {
+		void createTreeRecursive(ElementSet* element, int depth = 0) const {
 			if (!element) {
 				for (int i = 0; i < depth; ++i) cout << "\t";
 				cout << "None" << endl;
 				return;
 			}
 
-			printTreeRecursive(element->right, depth + 1);
+			createTreeRecursive(element->right, depth + 1);
 			
 			for (int i = 0; i < depth; ++i) cout << "\t";
 			cout << element->value << " <" << endl;
 
-			printTreeRecursive(element->left, depth + 1);
+			createTreeRecursive(element->left, depth + 1);
 		}
 
-		void printTree() const {
-			printTreeRecursive(this->root);
+		void createTree() const {
+			createTreeRecursive(this->root);
+		}
+
+		
+
+		friend ostream& operator << (ostream& os, const Set<T>& set) {
+			set.printElements(os, set.root);
+			return os;
+		}
+
+
+
+		T getMin() const {
+			return this->elementMin->value;
+		}
+
+		T getMax() const {
+			return this->elementMax->value;
+		}
+
+		void optimize() {
+			this->getMiddleRecursive(this->root);
+
+			return;
+		}
+
+		T getMiddle() const {
+			this->getMiddleRecursive(this->root);
+
+			return this->elementMiddle->value;
 		}
 };
 int main(void)
 {
     Set<int> a;
+	Set<int> b;
     
-	a += 13;
-	a += 8;
-	a += 5;
-	a += 2;
-	a += 4;
-	a += 1;
-	a += 0;
+	for (int i=50; i>=0; i--) a+=i;
 
-	a += 34;
-	a += 23;
-	a += 35;
+	b = a + 1;
 
-	a.printTree();
-        
-
+	a.createTree();
     // for (int i=0; i<=50; i+=2) a-=i;
     // for (int i=0; i<=50; i+=3) a-=i;
     // cout << a << endl;
