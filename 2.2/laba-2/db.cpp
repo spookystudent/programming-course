@@ -10,7 +10,7 @@ class Table {
 private:
     vector<string> tableHeader;
     vector<vector<string>> tableData;
-    unordered_map<string, multimap<string, size_t>> indices; // Индексы для столбцов
+    unordered_map<string, unordered_multimap<string, size_t>> indices;
 
 public:
     Table(const vector<string>& header) : tableHeader(header) {}
@@ -36,9 +36,9 @@ public:
 
     void addIndex(const string& column) {
         if (indices.find(column) == indices.end()) {
-            indices[column] = multimap<string, size_t>();
+            indices[column] = unordered_multimap<string, size_t>();
 
-            multimap<string, size_t> &index = indices[column];
+            unordered_multimap<string, size_t> &index = indices[column];
             int column_index = getColumnIndex(column);
 
             for (size_t i = 0; i < tableData.size(); ++i) {
@@ -71,6 +71,8 @@ public:
         return resultTable;
     }
 
+
+
 private:
     int getColumnIndex(const string& column) const {
         for (int i = 0; i < tableHeader.size(); i++) {
@@ -92,6 +94,9 @@ private:
     }
 };
 
+
+
+
 class DB {
 private:
     map<string, Table*> tableList;
@@ -110,10 +115,12 @@ public:
     }
 };
 
+
+
+
 int main() {
     DB db;
 
-    // Создание таблицы T_1
     vector<string> header_1 {"A", "B", "C"};
     db.addTable("T_1", header_1);
 
@@ -124,11 +131,11 @@ int main() {
     t1->addRow({"A4", "B4", "C4"});
     t1->addRow({"A1", "B2", "C3"});
 
-    // Поиск без индекса
+
     Table* result_1 = t1->select("A", "A1");
     result_1->print();
 
-    // Создание таблицы T_2
+
     vector<string> header_2 {"D", "E", "F"};
     db.addTable("T_2", header_2);
 
@@ -139,17 +146,19 @@ int main() {
     t2->addRow({"D4", "E4", "F4"});
     t2->addRow({"D1", "E2", "F3"});
 
-    // Построение индекса для столбца D
+    cout << endl;
+
     t2->addIndex("D");
 
-    // Поиск по индексу
+
     Table* result_2 = t2->select("D", "D1");
     result_2->print();
 
-    // Добавление данных. Индекс должен обновиться
+    cout << endl;
+
+
     t2->addRow({"D1", "E3", "F3"});
 
-    // Поиск по индексу после добавления данных
     Table* result_3 = t2->select("D", "D1");
     result_3->print();
 

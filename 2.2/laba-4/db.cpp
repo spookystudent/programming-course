@@ -8,6 +8,7 @@
 #include <ctime>
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
 
 using namespace std;
 using namespace std::chrono;
@@ -167,7 +168,54 @@ void runTest(int variety, int maxRows, ofstream& outFile, int numTests = 5) {
             << totalWithIndex / numTests << endl;
 }
 
-int main() {
+void runPythonScript(const string& pythonScript, const string& dataFile, bool useCommandLine) {
+    if (useCommandLine) {
+        ifstream inFile(dataFile);
+        stringstream buffer;
+        buffer << inFile.rdbuf();
+        string data = buffer.str();
+        
+        std::replace(data.begin(), data.end(), '\n', ' ');
+        
+        string command = "python " + pythonScript + " " + data;
+        system(command.c_str());
+    } else {
+        string command = "python " + pythonScript + " " + dataFile;
+        system(command.c_str());
+    }
+}
+
+vector<int> generate_steps(int maxRows) {
+    vector<int> steps;
+    
+
+    int base_step = 1;
+    if (maxRows > 100000) base_step = 10000;
+    else if (maxRows > 10000) base_step = 1000;
+    else if (maxRows > 1000) base_step = 100;
+    else if (maxRows > 100) base_step = 10;
+    
+
+    for (int step = base_step; step <= maxRows; step += base_step) {
+        steps.push_back(step);
+        
+        if (step >= 10 * base_step) base_step *= 10;
+    }
+    
+
+    if (steps.empty() || steps.back() != maxRows) {
+        steps.push_back(maxRows);
+    }
+    
+    return steps;
+}
+
+int main(int argc, char* argv[]) {
+    bool useCommandLine = false;
+    if (argc > 1 && string(argv[1]) == "--command-line") {
+        useCommandLine = true;
+    }
+
     srand(time(nullptr));
 
     string filename = "data.txt";
@@ -181,50 +229,24 @@ int main() {
     vector<int> varieties = {10, 100, 1000};
     
     int maxRows;
-    int step;
-    
     cout << "Введите максимальное количество строк для тестирования: ";
     cin >> maxRows;
-    
-    cout << "Введите шаг для тестирования: ";
-    cin >> step;
-    
-    vector<int> steps;
-    int current = 10;
-    
-    while (current <= maxRows) {
-        steps.push_back(current);
-        
-        if (current < 100) {
-            current += 10;
-        } 
-        else if (current < 1000) {
-            current += max(50, current / 20);
-        }
-        else if (current < 10000) {
-            current += max(500, current / 15);
-        } 
-        else {
-            current += max(5000, maxRows / 10);
-        }
-    }
-    
-    if (steps.back() != maxRows) {
-        steps.push_back(maxRows);
-    }
-    
-    if (steps.back() != maxRows && maxRows > steps.back()) {
-        steps.push_back(maxRows);
-    }
 
-    sort(steps.begin(), steps.end());
-    steps.erase(unique(steps.begin(), steps.end()), steps.end());
+
+    vector<int> steps = generate_steps(maxRows);
+
+
+    cout << "Будут протестированы следующие количества строк: ";
+    for (int step : steps) {
+        cout << step << " ";
+    }
+    cout << endl << endl;
 
     for (int variety : varieties) {
-        cout << variety << endl;
-        for (int maxRows : steps) {
-            cout << endl << maxRows << endl;
-            runTest(variety, maxRows, outFile);
+        cout << "Тестирование для variety = " << variety << endl;
+        for (int rows : steps) {
+            cout << "  Количество строк: " << rows << endl;
+            runTest(variety, rows, outFile);
         }
         outFile << endl;
     }
@@ -232,6 +254,9 @@ int main() {
     outFile.close();
     cout << "Тестирование завершено. Результаты сохранены в: " << filename << endl;
     cout << filesystem::absolute(filename) << endl;
+
+    string pythonScript = "graphics.py";
+    runPythonScript(pythonScript, filename, useCommandLine);
 
     return 0;
 }

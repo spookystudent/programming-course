@@ -4,16 +4,20 @@
 #include <map>
 #include <unordered_map>
 #include <chrono>
-#include <random>
+#include <cstdlib>
+#include <ctime>
+#include <fstream>
+#include <filesystem>
 
 using namespace std;
 using namespace std::chrono;
+
 
 class Table {
 private:
     vector<string> tableHeader;
     vector<vector<string>> tableData;
-    unordered_map<string, multimap<string, size_t>> indices;
+    unordered_map<string, unordered_multimap<string, size_t>> indices;
 
 public:
     Table(const vector<string>& header) : tableHeader(header) {}
@@ -39,9 +43,9 @@ public:
 
     void addIndex(const string& column) {
         if (indices.find(column) == indices.end()) {
-            indices[column] = multimap<string, size_t>();
+            indices[column] = unordered_multimap<string, size_t>();
 
-            multimap<string, size_t> &index = indices[column];
+            unordered_multimap<string, size_t> &index = indices[column];
             int column_index = getColumnIndex(column);
 
             for (size_t i = 0; i < tableData.size(); ++i) {
@@ -111,21 +115,15 @@ public:
             return nullptr;
         }
     }
+
+    ~DB() {
+        for (auto& table : tableList) {
+            delete table.second;
+        }
+    }
 };
 
 
-#include <algorithm>
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <vector>
-#include <string>
-#include <iomanip>
-#include <cstdlib>
-#include <ctime>
-#include <chrono>
-using namespace std;
-using namespace std::chrono;
 
 void runTest(int variety, int maxRows, ofstream& outFile, int numTests = 5) {
     DB db;

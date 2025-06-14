@@ -1,0 +1,91 @@
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import sys
+
+class Graphics:
+    def __init__(self, filename=None, command_line_data=None):
+        if command_line_data is not None:
+            self.data = self.parse_command_line_data(command_line_data)
+        else:
+            self.filename = filename
+            try:
+                with open(filename, 'r') as f:
+                    print(f'Файл найден: {filename}')
+                self.data = self.read_data()
+            except FileNotFoundError:
+                raise FileExistsError(f"Ошибка: файл {filename} не найден")
+
+    def parse_command_line_data(self, data_str):
+        data = []
+        lines = data_str.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            if line.count(',') == 3:
+                variety, max_rows, without_idx, with_idx = map(float, line.split(','))
+                data.append({
+                    'variety': int(variety),
+                    'max_rows': int(max_rows),
+                    'without_idx': without_idx,
+                    'with_idx': with_idx
+                })
+        return pd.DataFrame(data)
+
+    def read_data(self, filename=None):
+        data = []
+        if filename is None:
+            filename = self.filename
+        
+        with open(filename, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                if line.count(',') == 3:
+                    variety, max_rows, without_idx, with_idx = map(float, line.split(','))
+                    data.append({
+                        'variety': int(variety),
+                        'max_rows': int(max_rows),
+                        'without_idx': without_idx,
+                        'with_idx': with_idx
+                    })
+        return pd.DataFrame(data)
+    
+    def show(self):
+        data = self.data
+        varieties = data['variety'].unique()
+        
+        fig, axes = plt.subplots(len(varieties), 1, figsize=(12, 8), sharex=True)
+        if len(varieties) == 1:
+            axes = [axes]
+        
+        for i, variety in enumerate(varieties):
+            ax = axes[i]
+            subset = data[data['variety'] == variety]
+            
+            ax.plot(subset['max_rows'], subset['without_idx'], 'r-', label='Без индекса', marker='o')
+            ax.plot(subset['max_rows'], subset['with_idx'], 'b-', label='С индексом', marker='s')
+            
+            ax.set_title(f'Variety = {int(variety)}')
+            ax.set_ylabel('Время (мкс)')
+            ax.grid(True, which="both", ls="-")
+            ax.legend()
+        
+        plt.xlabel('Количество строк')
+        plt.suptitle('Сравнение времени выполнения SELECT запроса с индексом и без', y=1.02)
+        plt.tight_layout()
+        plt.show()
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if len(sys.argv) == 2 and sys.argv[1].endswith('.txt'):
+            manager = Graphics(filename=sys.argv[1])
+        else:
+            data_str = ' '.join(sys.argv[1:])
+            manager = Graphics(command_line_data=data_str)
+    else:
+        manager = Graphics(filename="data.txt")
+
+    manager.show()
