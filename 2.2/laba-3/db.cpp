@@ -8,6 +8,7 @@
 #include <ctime>
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
 
 using namespace std;
 using namespace std::chrono;
